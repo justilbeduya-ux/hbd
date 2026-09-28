@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d2418">
+<title>Incoming call…</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #17402b; --deep: #0d2418; --moss: #4c8a3c; --leaf: #8fc75a;
+    --mint: #e2f2cf; --pond: #6fbf9a; --paper: #fffdf3; --yuzu: #f4b73f; --ink: #1d3a28;
+    --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+    --serif: "Lora", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; background: var(--deep); overflow: hidden; font-family: var(--sans); }
+  svg.capy { display: block; width: 100%; height: auto; }
+
+  /* ---------- SCREEN 1: incoming call ---------- */
+  .call {
+    position: fixed; inset: 0; z-index: 3;
+    background: linear-gradient(180deg, #1d4a32 0%, #0d2418 75%);
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 70px) 30px calc(env(safe-area-inset-bottom, 0px) + 70px);
+    transition: transform .7s cubic-bezier(.2,.8,.2,1);
+  }
+  .call.gone { transform: translateY(-105%); }
+  .caller { text-align: center; }
+  .avatar { width: 128px; height: 128px; border-radius: 50%; overflow: hidden; margin: 0 auto 22px; background: #cfe8b5; border: 4px solid rgba(255,255,255,.18); }
+  .avatar svg { width: 100%; height: 100%; }
+  .caller h1 { color: #fff; font-size: 32px; font-weight: 400; margin-bottom: 8px; }
+  .caller p { color: #94b39f; font-size: 17px; }
+  .buttons { display: flex; justify-content: space-around; width: 100%; max-width: 320px; }
+  .btn { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff; font-size: 13px; }
+  .circle { width: 74px; height: 74px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; transition: transform .1s; }
+  .circle:active { transform: scale(.92); }
+  .circle svg { width: 32px; height: 32px; fill: #fff; }
+  .decline { background: #ff3b30; }
+  .decline svg { transform: rotate(135deg); }
+  .accept { background: #34c759; animation: ring 1.4s ease-in-out infinite; }
+  @keyframes ring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+  /* ---------- SCREEN 2: the card ---------- */
+  .stage { position: fixed; inset: 0; z-index: 1; background: var(--mint); overflow: hidden; opacity: 0; transition: opacity .6s ease .25s; }
+  .stage.show { opacity: 1; }
+  .card {
+    position: absolute; inset: 0; z-index: 1;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: calc(env(safe-area-inset-top, 0px) + 44px) 22px calc(env(safe-area-inset-bottom, 0px) + 50px);
+  }
+
+  /* floating capybaras */
+  .floaters { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .call .floaters { z-index: -1; }
+  .floater { position: absolute; left: var(--x); bottom: -130px; width: var(--s); opacity: var(--o); animation: drift var(--d) linear var(--delay) infinite; }
+  .call .floater { opacity: calc(var(--o) * .55); }
+  .floater svg { display: block; width: 100%; height: auto; transform: scaleX(var(--f)); }
+  @keyframes drift {
+    0%   { transform: translate(0, 0) rotate(-6deg); }
+    25%  { transform: translate(18px, -32vh) rotate(5deg); }
+    50%  { transform: translate(-14px, -66vh) rotate(-5deg); }
+    75%  { transform: translate(16px, -100vh) rotate(6deg); }
+    100% { transform: translate(0, -135vh) rotate(-6deg); }
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+
+  .title { font-family: var(--display); font-weight: 600; font-size: 42px; line-height: 1.05; color: var(--forest); text-align: center; }
+  .sub { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--moss); text-align: center; margin: 10px 0 8px; }
+  .hero { width: 100%; max-width: 340px; margin: 0 auto 40px; animation: bob 4.5s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+  .print {
+    position: relative; background: var(--paper); padding: 12px 12px 18px; border-radius: 6px;
+    box-shadow: 0 12px 26px rgba(23,64,43,.2); margin-bottom: 46px;
+  }
+  .print::before {
+    content: ""; position: absolute; top: -12px; left: 50%; width: 86px; height: 24px;
+    background: rgba(143,199,90,.75); transform: translateX(-50%) rotate(-3deg);
+  }
+  .print:nth-of-type(1) { transform: rotate(-2deg); }
+  .print:nth-of-type(2) { transform: rotate(1.8deg); }
+  .print:nth-of-type(3) { transform: rotate(-1.4deg); }
+  .print:nth-of-type(4) { transform: rotate(2deg); }
+  .frame { background: #c8e3aa; overflow: hidden; display: grid; place-items: center; min-height: 220px; }
+  .frame img { width: 100%; height: auto; display: block; filter: blur(14px) saturate(.4) brightness(1.15); transition: filter 2s ease; }
+  .print.developed img { filter: none; }
+  .missing { color: var(--forest); font: 14px var(--sans); opacity: .65; padding: 20px; text-align: center; }
+  .caption { font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--forest); text-align: center; margin-top: 14px; }
+  .caption.big { font-size: 34px; font-weight: 600; color: var(--moss); }
+
+  .letter { background: var(--paper); border: 3px solid #c3e0a4; border-radius: 22px; padding: 30px 24px; margin-top: 6px; }
+  .letter p { font-family: var(--serif); font-size: 18px; line-height: 1.65; color: var(--ink); margin-bottom: 16px; }
+  .letter .greet { font-family: var(--display); font-size: 26px; font-weight: 600; color: var(--forest); }
+  .letter .sign { font-style: italic; color: var(--moss); margin-bottom: 2px; }
+  .letter .name { font-family: var(--display); font-size: 26px; font-weight: 600; color: var(--forest); margin-bottom: 0; }
+  .foot { width: 120px; margin: 34px auto 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .accept, .hero { animation: none; }
+    .call, .stage, .frame img { transition: none; }
+    .floater { animation: none; bottom: auto; top: var(--t); }
+    .frame img { filter: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Capybara drawing, reused in three places -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="capy" viewBox="0 0 200 120">
+    <ellipse cx="96" cy="76" rx="70" ry="33" fill="#a9744a"/>
+    <ellipse cx="156" cy="64" rx="32" ry="25" fill="#b98455"/>
+    <ellipse cx="184" cy="68" rx="14" ry="13" fill="#a26c42"/>
+    <ellipse cx="192" cy="63" rx="5" ry="4" fill="#3b2416"/>
+    <ellipse cx="143" cy="44" rx="6" ry="8" fill="#8a5a36"/>
+    <path d="M163 57q4 3.5 9 0" fill="none" stroke="#2a1a10" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="152" cy="36" r="10" fill="#f4b73f"/>
+    <path d="M152 27q7-6 12-2q-3 7-12 2z" fill="#4c8a3c"/>
+    <path d="M0 92q25-9 50 0t50 0t50 0t50 0V120H0z" fill="#6fbf9a" opacity=".92"/>
+    <path d="M18 104q14-5 28 0M120 108q14-5 28 0" fill="none" stroke="#fff" stroke-width="2" opacity=".5" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="capyf" viewBox="0 20 200 95">
+    <g fill="#8a5a36"><rect x="50" y="98" width="11" height="16" rx="5"/><rect x="72" y="100" width="11" height="14" rx="5"/><rect x="112" y="100" width="11" height="14" rx="5"/><rect x="134" y="98" width="11" height="16" rx="5"/></g>
+    <ellipse cx="96" cy="76" rx="70" ry="33" fill="#a9744a"/>
+    <ellipse cx="156" cy="64" rx="32" ry="25" fill="#b98455"/>
+    <ellipse cx="184" cy="68" rx="14" ry="13" fill="#a26c42"/>
+    <ellipse cx="192" cy="63" rx="5" ry="4" fill="#3b2416"/>
+    <ellipse cx="143" cy="44" rx="6" ry="8" fill="#8a5a36"/>
+    <path d="M163 57q4 3.5 9 0" fill="none" stroke="#2a1a10" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="152" cy="36" r="10" fill="#f4b73f"/>
+    <path d="M152 27q7-6 12-2q-3 7-12 2z" fill="#4c8a3c"/>
+  </symbol>
+</svg>
+
+<!-- SCREEN 1 -->
+<div class="call" id="call">
+  <div class="floaters" id="floatersCall"></div>
+  <div class="caller">
+    <div class="avatar"><svg viewBox="70 22 130 98" preserveAspectRatio="xMidYMid slice"><use href="#capy" width="200" height="120"/></svg></div>
+    <h1 id="callerName"></h1>
+    <p>cellular call</p>
+  </div>
+  <div class="buttons">
+    <div class="btn">
+      <button class="circle decline" id="declineBtn" aria-label="Decline">
+        <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+      </button>
+      Decline
+    </div>
+    <div class="btn">
+      <button class="circle accept" id="acceptBtn" aria-label="Accept">
+        <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+      </button>
+      Accept
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2 -->
+<div class="stage" id="stage">
+<div class="floaters" id="floatersCard"></div>
+<div class="card" id="card">
+  <div class="wrap">
+    <h2 class="title" id="title"></h2>
+    <p class="sub" id="sub"></p>
+    <div class="hero"><svg class="capy" viewBox="0 0 200 120" role="img" aria-label="A capybara soaking in a pond with a yuzu on its head"><use href="#capy" width="200" height="120"/></svg></div>
+    <div id="prints"></div>
+    <div class="letter" id="letter"></div>
+    <div class="foot"><svg class="capy" viewBox="0 0 200 120" aria-hidden="true"><use href="#capy" width="200" height="120"/></svg></div>
+  </div>
+</div>
+</div>
+
+<audio id="music" src="song.mp3" loop preload="auto"></audio>
+
+<script>
+  /* ============================================================
+     EDIT THIS FILE ONLY. Change the text inside the quotes.
+     ============================================================ */
+  const CONFIG = {
+    callerName: "Wawuvv❤️",          // what shows on the fake call screen
+    herName: "Pipingg",              // used in the title and the letter
+    yourName: "Dodonggg",            // signs the letter
+    declineMessage: "Nice try. Not today 😉",
+
+    // Four photos, same folder as this file. "big: true" makes a caption large.
+    photos: [
+      { file: "photo1.jpg", caption: "Senior High pata ani ouh beri kyut pa ayo ta." },
+      { file: "photo2.jpg", caption: "Beri byotipol na daot lang bekas naay WAPO sa likod" },
+      { file: "photo3.jpg", caption: "You, me, and a heart in the sand" },
+      { file: "photo4.jpg", caption: "capybara!!!!", big: true }
+    ],
+
+    // Each string is one paragraph.
+    letter: [
+      "I wanted to surprise you in a different way this year, so I called. Thank you for picking up.",
+      "Being with you is the easiest and happiest part of my life. You make ordinary days feel like something worth remembering, and you make me want to be better without ever asking me to be.",
+      "Thank you for your patience, your laugh, and the way you care about me. Sorry if naa ko pagkulang dili taka madala sa gawas awat sa uban nga detdet sila permi bat dont worree aym bawi yooo puhonn yoo sabot lang may sitwesyon that aym poor, jsut know that I'm alwasys grateful every day that I get to be next to you.",
+      "I hope this year brings you everything you deserve, and I hope I'm there for all of it.",
+      "Happy Birthday wawuvvvvvvvvv"
+    ]
+  };
+
+
+  const $ = id => document.getElementById(id);
+
+  $("callerName").textContent = CONFIG.callerName;
+  $("title").textContent = "Happy birthday, " + CONFIG.herName;
+  $("sub").textContent = "Scroll down. I made this for you.";
+
+  function makeFloaters(el, n) {
+    for (let i = 0; i < n; i++) {
+      const d = document.createElement("div");
+      d.className = "floater";
+      const st = d.style;
+      st.setProperty("--x", (Math.random() * 90) + "%");
+      st.setProperty("--s", (46 + Math.random() * 64) + "px");
+      st.setProperty("--d", (18 + Math.random() * 18) + "s");
+      st.setProperty("--delay", "-" + (Math.random() * 36) + "s");
+      st.setProperty("--o", (0.32 + Math.random() * 0.25).toFixed(2));
+      st.setProperty("--f", Math.random() < 0.5 ? -1 : 1);
+      st.setProperty("--t", (Math.random() * 88) + "%");
+      d.innerHTML = '<svg viewBox="0 0 200 95" aria-hidden="true"><use href="#capyf" width="200" height="95"/></svg>';
+      el.appendChild(d);
+    }
+  }
+  makeFloaters($("floatersCard"), 16);
+  makeFloaters($("floatersCall"), 8);
+
+  const prints = $("prints");
+  CONFIG.photos.forEach(p => {
+    const fig = document.createElement("figure");
+    fig.className = "print";
+    const frame = document.createElement("div");
+    frame.className = "frame";
+    const img = document.createElement("img");
+    img.src = p.file;
+    img.alt = p.caption;
+    img.onerror = () => {
+      img.remove();
+      const m = document.createElement("div");
+      m.className = "missing";
+      m.textContent = "Add " + p.file + " next to index.html";
+      frame.appendChild(m);
+    };
+    frame.appendChild(img);
+    const cap = document.createElement("figcaption");
+    cap.className = "caption" + (p.big ? " big" : "");
+    cap.textContent = p.caption;
+    fig.append(frame, cap);
+    prints.appendChild(fig);
+  });
+
+  const letter = $("letter");
+  const add = (cls, text) => { const p = document.createElement("p"); if (cls) p.className = cls; p.textContent = text; letter.appendChild(p); };
+  add("greet", "Dear " + CONFIG.herName + ",");
+  CONFIG.letter.forEach(t => add("", t));
+  add("sign", "Always yours,");
+  add("name", CONFIG.yourName + " ❤️");
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("developed"); io.unobserve(e.target); } });
+  }, { root: $("card"), threshold: 0.35 });
+  document.querySelectorAll(".print").forEach(el => io.observe(el));
+
+  $("declineBtn").addEventListener("click", () => alert(CONFIG.declineMessage));
+  $("acceptBtn").addEventListener("click", () => {
+    $("call").classList.add("gone");
+    $("stage").classList.add("show");
+    document.title = "Happy birthday ❤️";
+    $("music").play().catch(() => {});
+  });
+</script>
+</body>
+</html>
